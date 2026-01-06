@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProTools - All-in-One PDF Suite</title>
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Loading Screen Style */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0f172a; /* Dark Blue-Black */
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease-out;
+        }
+        .animate-name {
+            font-size: 3rem; font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, #ef4444, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeIn 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes fadeIn { from { opacity: 0.3; transform: scale(0.9); } to { opacity: 1; transform: scale(1.05); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+
+    <div id="splash-screen">
+        <p class="text-gray-400 text-sm mb-2 uppercase tracking-widest">Powered By</p>
+        <h1 class="animate-name">ANKIT SIRØVA</h1>
+        <div class="mt-5 w-16 h-1 bg-red-600 animate-pulse"></div>
+    </div>
+
+    <div class="max-w-5xl mx-auto p-6">
+        <header class="text-center my-10">
+            <h1 class="text-5xl font-black text-white tracking-tighter">Pro<span class="text-red-600">Tools</span></h1>
+            <p class="text-gray-400 mt-2">Professional & Secure PDF Utility Solutions</p>
+        </header>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="bg-gray-800 p-6 rounded-2xl border-b-4 border-red-600 shadow-xl">
+                <h2 class="text-xl font-bold mb-4 flex items-center">🔓 Password Remover</h2>
+                <input type="file" id="unlockFile" class="text-sm mb-3 w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100">
+                <input type="password" id="unlockPass" placeholder="Current Password" class="w-full p-2 mb-3 bg-gray-700 rounded text-white outline-none border border-gray-600 focus:border-red-500">
+                <button onclick="removePassword()" class="w-full bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold transition duration-300">Unlock PDF</button>
+            </div>
+
+            <div class="bg-gray-800 p-6 rounded-2xl border-b-4 border-blue-600 shadow-xl">
+                <h2 class="text-xl font-bold mb-4 flex items-center">📂 Merge PDF</h2>
+                <input type="file" id="mergeFiles" multiple class="text-sm mb-3 w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                <button onclick="mergePDFs()" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold transition duration-300">Combine Files</button>
+            </div>
+
+            <div class="bg-gray-800 p-6 rounded-2xl border-b-4 border-green-600 shadow-xl">
+                <h2 class="text-xl font-bold mb-4 flex items-center">🖼️ PDF to Image</h2>
+                <input type="file" id="pdfToImgFile" class="text-sm mb-3 w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                <button onclick="convertToImage()" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-xl font-bold transition duration-300">Convert to PNG</button>
+            </div>
+        </div>
+
+        <p id="status" class="mt-10 text-center text-yellow-400 font-bold"></p>
+
+        <footer class="mt-20 py-10 border-t border-gray-800 text-center">
+            <p class="text-gray-500">© 2026 ProTools by <span class="text-gray-300 font-bold">Ankit Sirøva</span></p>
+        </footer>
+    </div>
+
+    <script>
+        // Splash Screen Logic: 3 seconds baad hide hoga
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                splash.style.opacity = '0';
+                setTimeout(() => splash.style.display = 'none', 1000);
+            }, 2500); // 2.5 Seconds delay
+        });
+
+        // PDF Functions (Same as before)
+        async function removePassword() {
+            const file = document.getElementById('unlockFile').files[0];
+            const pass = document.getElementById('unlockPass').value;
+            if(!file || !pass) return alert("Select file & enter password");
+            try {
+                const existingBytes = await file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(existingBytes, { password: pass });
+                const pdfBytes = await pdfDoc.save();
+                download(pdfBytes, "unlocked_by_ProTools.pdf", "application/pdf");
+            } catch (e) { alert("Wrong Password!"); }
+        }
+
+        async function mergePDFs() {
+            const files = document.getElementById('mergeFiles').files;
+            if(files.length < 2) return alert("Select at least 2 files");
+            const mergedPdf = await PDFLib.PDFDocument.create();
+            for (let f of files) {
+                const bytes = await f.arrayBuffer();
+                const pdf = await PDFLib.PDFDocument.load(bytes);
+                const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                pages.forEach(p => mergedPdf.addPage(p));
+            }
+            const mergedBytes = await mergedPdf.save();
+            download(mergedBytes, "merged_by_ProTools.pdf", "application/pdf");
+        }
+
+        async function convertToImage() {
+            const file = document.getElementById('pdfToImgFile').files[0];
+            if(!file) return alert("Select a PDF");
+            const reader = new FileReader();
+            reader.onload = async function() {
+                const typedarray = new Uint8Array(this.result);
+                const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                const page = await pdf.getPage(1);
+                const viewport = page.getViewport({scale: 2});
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height; canvas.width = viewport.width;
+                await page.render({canvasContext: context, viewport: viewport}).promise;
+                const imgData = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = imgData; link.download = "ProTools_Image.png"; link.click();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function download(bytes, name, type) {
+            const blob = new Blob([bytes], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name; a.click();
+        }
+    </script>
+</body>
+</html>
